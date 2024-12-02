@@ -1,0 +1,9 @@
+#########################
+######### POSTS #########
+#########################
+
+### Récupération d'un seul et unique post
+GET http://127.0.0.1:1337/post/JOFP28349F/json HTTP/1.1
+
+###
+GET http://127.0.0.1:1337/posts?last_id=JOFP2349F& HTTP/1.1
