@@ -7,3 +7,20 @@ GET http://127.0.0.1:1337/post/JOFP28349F/json HTTP/1.1
 
 ###
 GET http://127.0.0.1:1337/posts?last_id=JOFP2349F& HTTP/1.1
+
+### 
+DELETE http://127.0.0.1:1337/posts/JOFP2349F& HTTP/1.1
+
+### 
+PUT http://127.0.0.1:1337/posts HTTP/1.1
+Content-Type: application/json; charset=utf-8
+
+
+{
+    "author": "Dan",
+    "photos": "/photo/dan/haha.png",
+    "video": "/video/dan/videohahaha.mp4",
+    "description":"Hello today there will be something",
+    "place": "Paris",
+    "music": "lea"
+}

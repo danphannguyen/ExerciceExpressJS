@@ -1,9 +1,14 @@
 import express, { type Request, response, Response } from 'express';
 import * as path from 'path';
-import { getPosts, deletePost, getPost, IPost } from './db';
+import { getPosts, deletePost, randomIntFromInterval, createPost, getPost, IPost, TPhotos, TComments } from './db';
+import { faker } from '@faker-js/faker';
+import { v4 as uuidv4 } from 'uuid';
+
 
 // Create an instance of Express
 const app = express();
+
+app.use(express.json());
 
 // Serving public directory
 // app.use(express.static(path.join(__dirname,'public')));
@@ -12,11 +17,11 @@ const app = express();
 app.get('/post/:id/:type', (req: Request, res: Response): void => {
 
     //
-    const type = req.params.type as string ;
+    const type = req.params.type as string;
 
-    if( ! /^(json|txt)$/i.test(type) ){
+    if (! /^(json|txt)$/i.test(type)) {
         res.status(415).end();
-        return ;
+        return;
     }
 
     // Récupération du paramètre d'url "id".
@@ -30,26 +35,26 @@ app.get('/post/:id/:type', (req: Request, res: Response): void => {
 
     // Création d'un indicateur booléan pour éviter 
     // de réévaluer constamment la même expression
-    const postFound: boolean = post !== undefined ;
-    
+    const postFound: boolean = post !== undefined;
+
     let responsePost: IPost | string | undefined = undefined;
 
-    if( postFound ){
-        switch( type.toLowerCase() ){
-            
+    if (postFound) {
+        switch (type.toLowerCase()) {
+
             case 'json':
                 responsePost = post;
-            break;
+                break;
 
             case 'txt':
-                responsePost = Object.entries(post || {}).reduce( (acc, [key, value]) => {
+                responsePost = Object.entries(post || {}).reduce((acc, [key, value]) => {
                     return `${acc}\n${key}: ${value}`;
                 }, ``);
-            break ;
+                break;
 
-            default : 
+            default:
                 res.status(415).end();
-                return ;
+                return;
         }
     }
 
@@ -70,9 +75,9 @@ app.get('/post/:id/:type', (req: Request, res: Response): void => {
 // |
 // v
 type ReqDictionary = {}
-type ReqBody  = void;
+type ReqBody = void;
 type ReqQuery = { last_id?: string }
-type ResBody  = IPost[];
+type ResBody = IPost[];
 
 // On définit notre custom handler qui n'est ni plus ni moins qu'un type Request personnalisé
 type CustomPostsHandlerRequest = Request<ReqDictionary, ResBody, ReqBody, ReqQuery>
@@ -94,7 +99,7 @@ app.get('/posts', (req: CustomPostsHandlerRequest, res: Response): void => {
         // On spécifie le code HTTP 200 et on retourne le contenu demandé.
         res.status(200).send(getPosts(last_id, 3));
     }
-    catch (e){
+    catch (e) {
         // En cas d'erreur on évite de renvoyer le message d'erreur,
         // on se contente d'envoyer le code d'erreur 500 (erreur interne)
         res.status(500).end();
@@ -104,24 +109,61 @@ app.get('/posts', (req: CustomPostsHandlerRequest, res: Response): void => {
 // 
 app.delete('/posts/:post_id', (req: Request, res: Response): void => {
     try {
-        const postId: string = req.query.id as string;
+        const postId: string = req.params.post_id;
         deletePost(postId);
-        res.end();
+        res.status(200).end();
     }
-    catch( e ){
-        res.status(500).end();
+    catch (e) {
+        res.status(404).json({
+            postId: `le post n'a pas été trouvé`
+        });;
     }
 });
 
-app.put('/posts', (req: Request, res: Response): void => {
+type ReqDictionaryCreate = {}
+type ReqBodyCreate = {
+    id: string;
+    author: string;
+    photos?: TPhotos;
+    video?: string;
+    comments: TComments;
+    description: string;
+    date: Date;
+    likes: number;
+    place: string;
+    music: string;
+};
+type ReqQueryCreate = {}
+type ResBodyCreate = IPost[];
+
+// On définit notre custom handler qui n'est ni plus ni moins qu'un type Request personnalisé
+type CustomPostsHandlerRequestCreate = Request<ReqDictionaryCreate, ResBodyCreate, ReqBodyCreate, ReqQueryCreate>
+
+app.put('/posts', (req: CustomPostsHandlerRequestCreate, res: Response): void => {
     try {
 
         // TODO Creation
 
+        let queryData = {
+            id: uuidv4(),
+            author: req.body.author,
+            photos: req.body.photos,
+            video: req.body.video,
+            comments: [],
+            description: req.body.author,
+            date: new Date(),
+            likes: 0,
+            place: req.body.place,
+            music: req.body.music
+        };
+
+        createPost(queryData);
         res.status(201).json({
-            postId: `le post id créé`
+            postId: `le post ${queryData.id} créé`
         });
-    } catch (e){
+
+    } catch (e) {
+        console.log(e)
         res.status(500).end();
     }
 });
@@ -135,7 +177,7 @@ app.put('/posts/:post_id', (req: Request, res: Response): void => {
         res.status(200).json({
             // Le nouveau contenu du post
         });
-    } catch( e ){
+    } catch (e) {
         res.status(500).end();
     }
 });
